@@ -1,59 +1,73 @@
-class ZipExporter {
-    async exportProject(projectId) {
-        if (!projectId) {
-            alert('No hay proyecto activo para exportar.');
-            return;
-        }
+const ZipExporter = {
+  init() {
+    document.getElementById('export-zip-btn').addEventListener('click', () => this.exportMod());
+  },
 
-        if (typeof JSZip === 'undefined') {
-            alert('JSZip no está cargado.');
-            return;
-        }
-
-        try {
-            const zip = new JSZip();
-            const files = await db.getProjectFiles(projectId);
-
-            if (!files || files.length === 0) {
-                alert('El proyecto no tiene archivos para exportar.');
-                return;
-            }
-
-            const projects = await db.getAllProjects();
-            const currentProject = projects.find(p => p.id === projectId);
-            const rawName = currentProject ? currentProject.name : 'mindustry-mod';
-            const zipFilename = `${rawName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.zip`;
-
-            files.forEach(file => {
-                if (file.type === 'png') {
-                    const base64Data = file.content.replace(/^data:image\/(png|jpg);base64,/, '');
-                    zip.file(file.path, base64Data, { base64: true });
-                } else {
-                    zip.file(file.path, file.content || '');
-                }
-            });
-
-            const blob = await zip.generateAsync({ type: 'blob' });
-            this.downloadBlob(blob, zipFilename);
-
-        } catch (error) {
-            console.error('Export Error:', error);
-            alert(`Error al generar el ZIP:\n${error.message}`);
-        }
+  async exportMod() {
+    if (typeof JSZip === 'undefined') {
+      await this.loadJSZip();
     }
 
-    downloadBlob(blob, filename) {
-        const downloadUrl = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = downloadUrl;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        setTimeout(() => {
-            document.body.removeChild(anchor);
-            URL.revokeObjectURL(downloadUrl);
-        }, 100);
-    }
-}
+    const zip = new JSZip();
+    const files = await DB.getAllFiles();
 
-const zipExporter = new ZipExporter();
+    if (files.length === 0) {
+      alert('No hay elementos en el proyecto para exportar.');
+      return;
+    }
+
+    const spritesFolder = zip.folder('sprites');
+    const contentFolder = zip.folder('content');
+    const blocksFolder = contentFolder.folder('blocks');
+    const itemsFolder = contentFolder.folder('items');
+    const liquidsFolder = contentFolder.folder('liquids');
+
+    for (const file of files) {
+      if (file.name === 'mod.json') {
+        zip.file('mod.json', file.content);
+      } else if (file.type === 'image') {
+        const base64Data = file.content.split(',')[1];
+        spritesFolder.file(file.name.replace('sprites/', ''), base64Data, { base64: true });
+      } else {
+        const parsed = HjsonEngine.parse(file.content);
+        const type = (parsed.type || 'Block').toLowerCase();
+        
+        if (type.includes('item')) {
+          itemsFolder.file(file.name, file.content);
+        } else if (type.includes('liquid')) {
+          liquidsFolder.file(file.name, file.content);
+        } else {
+          blocksFolder.file(file.name, file.content);
+        }
+      }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const modJsonFile = files.find(f => f.name === 'mod.json');
+    let modName = 'mindmod';
+    if (modJsonFile) {
+      const parsedMod = HjsonEngine.parse(modJsonFile.content);
+      if (parsedMod.name) modName = parsedMod.name.toLowerCase().replace(/\s+/g, '-');
+    }
+
+    a.download = `${modName}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
+  loadJSZip() {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject('Error al cargar JSZip.');
+      document.head.appendChild(script);
+    });
+  }
+};
