@@ -1,21 +1,53 @@
-class CodeEditor {
-    render(file, container) {
-        container.innerHTML = `
-            <div class="editor-wrapper" style="padding: 1rem; height: 100%; display: flex; flex-direction: column;">
-                <textarea id="active-file-textarea" style="width: 100%; flex: 1; background: #1e222b; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; padding: 10px; font-family: monospace; resize: none;">${file.content || ''}</textarea>
-                <div style="margin-top: 10px; text-align: right;">
-                    <button id="save-file-btn" class="btn btn-primary btn-sm">Guardar Cambios</button>
-                </div>
-            </div>
-        `;
+const CodeEditor = {
+  init() {
+    this.editor = document.getElementById('code-editor');
+    if (!this.editor) return;
 
-        document.getElementById('save-file-btn').addEventListener('click', async () => {
-            const updatedContent = document.getElementById('active-file-textarea').value;
-            file.content = updatedContent;
-            await db.saveFile(file);
-            alert('Archivo guardado correctamente.');
-        });
+    // Habilitar el uso de la tecla Tab en el textarea
+    this.editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.editor.selectionStart;
+        const end = this.editor.selectionEnd;
+
+        this.editor.value = this.editor.value.substring(0, start) + '  ' + this.editor.value.substring(end);
+        this.editor.selectionStart = this.editor.selectionEnd = start + 2;
+      }
+    });
+
+    // Auditor de sintaxis estructural en tiempo real
+    this.editor.addEventListener('input', () => {
+      this.validateSyntax(this.editor.value);
+    });
+  },
+
+  validateSyntax(text) {
+    const statusIndicator = document.getElementById('status-indicator');
+    if (!statusIndicator) return;
+
+    try {
+      const openBraces = (text.match(/{/g) || []).length;
+      const closeBraces = (text.match(/}/g) || []).length;
+      const openBrackets = (text.match(/\[/g) || []).length;
+      const closeBrackets = (text.match(/\]/g) || []).length;
+
+      if (openBraces !== closeBraces) {
+        statusIndicator.textContent = 'Error: Llaves { } desbalanceadas';
+        statusIndicator.style.color = '#d32f2f';
+        return;
+      }
+
+      if (openBrackets !== closeBrackets) {
+        statusIndicator.textContent = 'Error: Corchetes [ ] desbalanceados';
+        statusIndicator.style.color = '#d32f2f';
+        return;
+      }
+
+      statusIndicator.textContent = 'Sintaxis válida';
+      statusIndicator.style.color = '#a6e22e';
+    } catch (err) {
+      statusIndicator.textContent = 'Error de sintaxis Hjson';
+      statusIndicator.style.color = '#d32f2f';
     }
-}
-
-const codeEditor = new CodeEditor();
+  }
+};
