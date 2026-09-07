@@ -1,121 +1,118 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindustry Hjson Studio</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#21252b">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mindmod</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e1e24">
 </head>
 <body>
-    <header class="app-header">
-        <div class="brand">
-            <span class="logo-icon">⚡</span>
-            <h1>Mindustry Hjson Studio</h1>
+  
+  <header class="topbar">
+    <div class="logo">⚡ Mindmod</div>
+    <div class="topbar-actions">
+      <!-- Enlace hacia la documentación técnica de modding -->
+      <a href="https://mindustrygame.github.io/wiki/modding/1-modding/" target="_blank" rel="noopener noreferrer" class="btn-wiki">Wiki / Docs</a>
+      <button id="export-zip-btn" class="btn-export">Exportar (.zip)</button>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <!-- Barra lateral de archivos y herramientas -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button id="new-element-btn" class="btn-primary w-100">+ Nuevo Elemento</button>
+      </div>
+      
+      <div class="file-list-container">
+        <ul id="file-list" class="file-list">
+          <!-- Los archivos se inyectarán aquí dinámicamente -->
+        </ul>
+      </div>
+
+      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 6px;">
+        <button id="mod-json-btn" class="btn-secondary w-100">⚙️ mod.json</button>
+        <button id="audit-mod-btn" class="btn-secondary w-100">🔍 Auditar Mod</button>
+        <button id="view-sprites-btn" class="btn-secondary w-100">🖼️ Ver Texturas</button>
+        <button id="backup-project-btn" class="btn-secondary w-100">💾 Guardar Copia</button>
+        <label class="btn-secondary w-100" style="cursor:pointer; display:block; text-align:center; box-sizing: border-box;">
+          📂 Cargar Copia
+          <input type="file" id="import-project-file" accept=".mindmod,.json" class="hidden" style="display: none;">
+        </label>
+      </div>
+    </aside>
+
+    <!-- Área de trabajo principal -->
+    <section class="workspace">
+      
+      <!-- Panel Visual (Formulario basado en Hjson) -->
+      <div id="visual-panel" class="editor-panel">
+        <div id="form-container" class="form-grid">
+          <!-- Los campos visuales se generarán aquí -->
         </div>
-        <div class="header-actions">
-            <a href="https://mindustrygame.github.io/wiki/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" title="Mindustry Official Wiki">
-                <span>Wiki / Docs</span>
-            </a>
-            <button id="export-zip-btn" class="btn btn-primary btn-sm" disabled>Export (.zip)</button>
+        <div class="visual-actions">
+          <button id="add-prop-btn" class="btn-outline">+ Añadir Propiedad</button>
+          <button id="open-sprite-modal-btn" class="btn-outline">🖼️ Vincular Sprite</button>
         </div>
-    </header>
+      </div>
 
-    <main class="app-layout">
-        <!-- Dashboard View: Project Management -->
-        <section id="dashboard-view" class="view-section active">
-            <div class="dashboard-controls">
-                <h2>Project Workspace</h2>
-                <div class="action-bar">
-                    <button id="btn-new-project" class="btn btn-primary">+ New Mod Project</button>
-                    <button id="btn-import-project" class="btn btn-secondary">Import Mod (.zip)</button>
-                </div>
-            </div>
+      <!-- Panel de Código Crudo (Hjson estricto) -->
+      <div id="code-panel" class="editor-panel hidden">
+        <textarea id="code-editor" spellcheck="false" placeholder="Escribe código Hjson aquí..."></textarea>
+      </div>
 
-            <div id="project-list" class="project-grid">
-                <!-- Projects rendered dynamically via db.js -->
-            </div>
-        </section>
+      <!-- Barra de control inferior -->
+      <div class="workspace-footer">
+        <span id="status-indicator" class="status-text">Guardado</span>
+        <button id="toggle-view-btn" class="btn-primary">👁️ Ver Código</button>
+      </div>
 
-        <!-- Workspace View: File Editor -->
-        <section id="workspace-view" class="view-section">
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <button id="btn-back-dashboard" class="btn btn-icon" title="Return to Dashboard">←</button>
-                    <span id="active-project-name" class="project-title">Project Name</span>
-                </div>
-                
-                <div class="tree-actions">
-                    <button id="btn-add-hjson" class="btn btn-outline btn-xs">+ Hjson Element</button>
-                    <button id="btn-add-sprite" class="btn btn-outline btn-xs">+ Sprite Image</button>
-                    <button id="btn-add-script" class="btn btn-outline btn-xs">+ Script (.js)</button>
-                </div>
+    </section>
+  </main>
 
-                <nav id="file-tree" class="file-tree-container">
-                    <!-- Virtual File System Tree -->
-                </nav>
-            </aside>
+  <!-- Sistema de Modales (Ocultos por defecto) -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    
+    <!-- Modal para vinculación de Sprites -->
+    <div id="sprite-modal" class="modal-box hidden">
+      <h3>Vincular Sprite a Elemento</h3>
+      <p class="modal-desc">El nombre de la imagen se igualará automáticamente al identificador del bloque/item seleccionado.</p>
+      
+      <div class="modal-field">
+        <label>Seleccionar elemento base:</label>
+        <select id="sprite-target-select" class="input-dark"></select>
+      </div>
+      
+      <div class="modal-field">
+        <label>Archivo PNG (Resolución base x32):</label>
+        <input type="file" id="sprite-upload" accept="image/png" class="input-dark">
+      </div>
+      
+      <div class="modal-actions">
+        <button id="cancel-sprite-btn" class="btn-outline">Cancelar</button>
+        <button id="confirm-sprite-btn" class="btn-primary">Vincular e Importar</button>
+      </div>
+    </div>
 
-            <section class="editor-stage">
-                <div id="editor-tabs" class="tab-bar">
-                    <!-- Open file tabs -->
-                </div>
-                <div id="editor-content" class="editor-viewport">
-                    <div class="empty-state">
-                        <p>Select a file from the workspace tree to start editing.</p>
-                    </div>
-                </div>
-            </section>
-        </section>
-    </main>
+  </div>
 
-    <!-- Modal: New Project -->
-    <dialog id="modal-new-project" class="app-modal">
-        <form id="form-new-project" method="dialog">
-            <h3>Create New Mindustry Mod</h3>
-            <div class="form-group">
-                <label for="mod-name">Mod Name *</label>
-                <input type="text" id="mod-name" required placeholder="e.g., Titanium Tech">
-            </div>
-            <div class="form-group">
-                <label for="mod-author">Author *</label>
-                <input type="text" id="mod-author" required placeholder="e.g., ModderName">
-            </div>
-            <div class="form-group">
-                <label for="mod-description">Description</label>
-                <textarea id="mod-description" rows="3" placeholder="Brief overview of your mod..."></textarea>
-            </div>
-            <div class="form-group">
-                <label for="mod-version">Version</label>
-                <input type="text" id="mod-version" value="1.0" placeholder="1.0">
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-new-project').close()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Create Workspace</button>
-            </div>
-        </form>
-    </dialog>
-
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="js/db.js"></script>
-    <script src="js/hjson-engine.js"></script>
-    <script src="js/code-editor.js"></script>
-    <script src="js/sprite-engine.js"></script>
-    <script src="js/zip-exporter.js"></script>
-    <script src="js/ui-controller.js"></script>
-    <script src="js/app.js"></script>
-
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
-                    .catch(err => console.error('Error al registrar Service Worker:', err));
-            });
-        }
-    </script>
+  <!-- Carga de scripts (Orden estricto para dependencias) -->
+  <script src="js/db.js"></script>
+  <script src="js/hjson-engine.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/sprite-engine.js"></script>
+  <script src="js/zip-exporter.js"></script>
+  <script src="js/code-editor.js"></script>
+  <script src="js/mod-manager.js"></script>
+  <script src="js/item-registry.js"></script>
+  <script src="js/block-templates.js"></script>
+  <script src="js/bullet-editor.js"></script>
+  <script src="js/mod-validator.js"></script>
+  <script src="js/sprite-viewer.js"></script>
+  <script src="js/project-backup.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
