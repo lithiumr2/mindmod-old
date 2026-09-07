@@ -1,145 +1,66 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    await db.init();
+const App = {
+  async init() {
+    // 1. Registrar Service Worker para PWA / Offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker registrado correctamente.'))
+        .catch((err) => console.log('Error al registrar Service Worker:', err));
+    }
 
-    const dashboardView = document.getElementById('dashboard-view');
-    const workspaceView = document.getElementById('workspace-view');
-    const projectList = document.getElementById('project-list');
-    const btnNewProject = document.getElementById('btn-new-project');
-    const modalNewProject = document.getElementById('modal-new-project');
-    const formNewProject = document.getElementById('form-new-project');
-    const btnBackDashboard = document.getElementById('btn-back-dashboard');
-    const exportZipBtn = document.getElementById('export-zip-btn');
+    // 2. Inicializar consola de depuración
+    Logger.init();
+    Logger.log('Entorno Mindmod listo para operar.', 'success');
 
-    const btnAddHjson = document.getElementById('btn-add-hjson');
-    const btnAddSprite = document.getElementById('btn-add-sprite');
-    const btnAddScript = document.getElementById('btn-add-script');
+    // 3. Inicializar base de datos y componentes principales
+    await DB.init();
+    await ItemRegistry.init();
+    await UIController.init();
+    CodeEditor.init();
 
-    async function loadProjects() {
-        const projects = await db.getAllProjects();
-        projectList.innerHTML = '';
+    // 4. Vincular eventos de las nuevas herramientas de la barra lateral
+    const auditBtn = document.getElementById('audit-mod-btn');
+    if (auditBtn) {
+      auditBtn.addEventListener('click', () => ModValidator.showAuditModal());
+    }
 
-        if (projects.length === 0) {
-            projectList.innerHTML = '<p style="color: #5c6370; grid-column: 1/-1;">No tienes proyectos aún.</p>';
-            return;
+    const viewSpritesBtn = document.getElementById('view-sprites-btn');
+    if (viewSpritesBtn) {
+      viewSpritesBtn.addEventListener('click', () => {
+        const formContainer = document.getElementById('form-container');
+        if (formContainer) {
+          // Cambiar a vista visual si estaba en código
+          document.getElementById('visual-panel').classList.remove('hidden');
+          document.getElementById('code-panel').classList.add('hidden');
+          document.getElementById('toggle-view-btn').textContent = '👁️ Ver Código';
+          SpriteViewer.renderSpriteGallery(formContainer);
+          Logger.log('Galería de texturas abierta.', 'info');
         }
+      });
+    }
 
-        projects.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'project-card';
-            card.style.background = '#21252b';
-            card.style.padding = '1rem';
-            card.style.borderRadius = '6px';
-            card.style.cursor = 'pointer';
-            card.style.border = '1px solid #3e4451';
-            card.innerHTML = `<h3>${p.name}</h3><p style="color: #abb2bf; font-size: 0.85rem;">v${p.version} - ${p.author}</p>`;
+    const backupBtn = document.getElementById('backup-project-btn');
+    if (backupBtn) {
+      backupBtn.addEventListener('click', () => {
+        ProjectBackup.exportWholeProject();
+        Logger.log('Respaldo del proyecto exportado con éxito.', 'success');
+      });
+    }
 
-            card.addEventListener('click', () => openWorkspace(p.id, p.name));
-            projectList.appendChild(card);
+    const importInput = document.getElementById('import-project-file');
+    if (importInput) {
+      importInput.addEventListener('change', (e) => {
+        ProjectBackup.importWholeProject(e, async () => {
+          await UIController.refreshFileList();
+          UIController.loadFile('mod.json');
+          Logger.log('Proyecto restaurado desde copia de seguridad.', 'success');
         });
+      });
     }
 
-    async function openWorkspace(projectId, projectName) {
-        ui.currentProjectId = projectId;
-        document.getElementById('active-project-name').textContent = projectName;
-        exportZipBtn.disabled = false;
+    Logger.log('Todos los módulos y eventos vinculados con éxito.', 'success');
+  }
+};
 
-        dashboardView.classList.remove('active');
-        workspaceView.classList.add('active');
-
-        await ui.loadWorkspace(projectId);
-    }
-
-    btnNewProject.addEventListener('click', () => modalNewProject.showModal());
-
-    formNewProject.addEventListener('submit', async (e) => {
-        const name = document.getElementById('mod-name').value;
-        const author = document.getElementById('mod-author').value;
-        const description = document.getElementById('mod-description').value;
-        const version = document.getElementById('mod-version').value;
-
-        const newProj = {
-            id: 'proj_' + Date.now(),
-            name,
-            author,
-            description,
-            version,
-            created: new Date().toISOString()
-        };
-
-        await db.createProject(newProj);
-        modalNewProject.close();
-        formNewProject.reset();
-        await loadProjects();
-    });
-
-    btnBackDashboard.addEventListener('click', () => {
-        ui.currentProjectId = null;
-        exportZipBtn.disabled = true;
-        workspaceView.classList.remove('active');
-        dashboardView.classList.add('active');
-        loadProjects();
-    });
-
-    exportZipBtn.addEventListener('click', async () => {
-        if (ui.currentProjectId) {
-            exportZipBtn.disabled = true;
-            exportZipBtn.textContent = 'Compilando...';
-            await zipExporter.exportProject(ui.currentProjectId);
-            exportZipBtn.disabled = false;
-            exportZipBtn.textContent = 'Export (.zip)';
-        }
-    });
-
-    btnAddHjson.addEventListener('click', async () => {
-        if (!ui.currentProjectId) return;
-        const name = prompt('Nombre del bloque (ej. reactor.hjson):');
-        if (!name) return;
-        const fileName = name.endsWith('.hjson') ? name : `${name}.hjson`;
-        const file = {
-            id: `${ui.currentProjectId}_${Date.now()}`,
-            projectId: ui.currentProjectId,
-            name: fileName,
-            path: `content/blocks/${fileName}`,
-            type: 'hjson',
-            content: 'type: Block\nsize: 2\ncategory: defense'
-        };
-        await db.saveFile(file);
-        await ui.loadWorkspace(ui.currentProjectId);
-    });
-
-    btnAddSprite.addEventListener('click', async () => {
-        if (!ui.currentProjectId) return;
-        const name = prompt('Nombre de la imagen (ej. reactor.png):');
-        if (!name) return;
-        const fileName = name.endsWith('.png') ? name : `${name}.png`;
-        const file = {
-            id: `${ui.currentProjectId}_${Date.now()}`,
-            projectId: ui.currentProjectId,
-            name: fileName,
-            path: `sprites/${fileName}`,
-            type: 'png',
-            content: ''
-        };
-        await db.saveFile(file);
-        await ui.loadWorkspace(ui.currentProjectId);
-    });
-
-    btnAddScript.addEventListener('click', async () => {
-        if (!ui.currentProjectId) return;
-        const name = prompt('Nombre del script (ej. main.js):');
-        if (!name) return;
-        const fileName = name.endsWith('.js') ? name : `${name}.js`;
-        const file = {
-            id: `${ui.currentProjectId}_${Date.now()}`,
-            projectId: ui.currentProjectId,
-            name: fileName,
-            path: `scripts/${fileName}`,
-            type: 'js',
-            content: '// Script de Mindustry\n'
-        };
-        await db.saveFile(file);
-        await ui.loadWorkspace(ui.currentProjectId);
-    });
-
-    await loadProjects();
+document.addEventListener('DOMContentLoaded', () => {
+  App.init();
 });
