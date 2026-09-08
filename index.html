@@ -1,118 +1,74 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mindmod</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mindmod IDE</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e1e24">
+  <meta name="theme-color" content="#21252b">
 </head>
 <body>
-  
-  <header class="topbar">
-    <div class="logo">⚡ Mindmod</div>
-    <div class="topbar-actions">
-      <!-- Enlace hacia la documentación técnica de modding -->
-      <a href="https://mindustrygame.github.io/wiki/modding/1-modding/" target="_blank" rel="noopener noreferrer" class="btn-wiki">Wiki / Docs</a>
-      <button id="export-zip-btn" class="btn-export">Exportar (.zip)</button>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Mindmod IDE</h1>
+    </div>
+    <div class="header-actions">
+      <a href="https://mindustrygame.github.io/wiki/" target="_blank" class="btn btn-secondary">Wiki / Docs</a>
+      <button id="export-zip-btn" class="btn btn-primary">Export (.zip)</button>
     </div>
   </header>
 
   <main class="app-layout">
-    <!-- Barra lateral de archivos y herramientas -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <button id="new-element-btn" class="btn-primary w-100">+ Nuevo Elemento</button>
-      </div>
+      <button id="new-element-btn" class="btn btn-accent">+ New Element</button>
       
-      <div class="file-list-container">
-        <ul id="file-list" class="file-list">
-          <!-- Los archivos se inyectarán aquí dinámicamente -->
-        </ul>
+      <div class="tools-menu" style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+        <button id="mod-json-btn" class="btn btn-secondary">mod.json</button>
+        <button id="audit-mod-btn" class="btn btn-secondary">Audit Mod</button>
+        <button id="view-sprites-btn" class="btn btn-secondary">View Textures</button>
+        <button id="backup-project-btn" class="btn btn-secondary">Save Backup</button>
+        
+        <label for="import-project-file" class="btn btn-secondary" style="cursor:pointer; text-align:center; display:block;">
+          Load Backup
+        </label>
+        <input type="file" id="import-project-file" accept=".mindmod" style="display:none;">
+        
+        <button id="add-prop-btn" class="btn btn-secondary">+ Add Property</button>
       </div>
 
-      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 6px;">
-        <button id="mod-json-btn" class="btn-secondary w-100">⚙️ mod.json</button>
-        <button id="audit-mod-btn" class="btn-secondary w-100">🔍 Auditar Mod</button>
-        <button id="view-sprites-btn" class="btn-secondary w-100">🖼️ Ver Texturas</button>
-        <button id="backup-project-btn" class="btn-secondary w-100">💾 Guardar Copia</button>
-        <label class="btn-secondary w-100" style="cursor:pointer; display:block; text-align:center; box-sizing: border-box;">
-          📂 Cargar Copia
-          <input type="file" id="import-project-file" accept=".mindmod,.json" class="hidden" style="display: none;">
-        </label>
-      </div>
+      <ul id="file-list" class="file-list" style="margin-top: 20px;"></ul>
     </aside>
 
-    <!-- Área de trabajo principal -->
-    <section class="workspace">
+    <section class="editor-area">
+      <div class="editor-toolbar">
+         <button id="toggle-view-btn" class="btn btn-secondary">View Code</button>
+         <span id="status-indicator" style="margin-left: 15px; color: #a0a0b0; font-size: 12px;">Ready</span>
+      </div>
       
-      <!-- Panel Visual (Formulario basado en Hjson) -->
-      <div id="visual-panel" class="editor-panel">
-        <div id="form-container" class="form-grid">
-          <!-- Los campos visuales se generarán aquí -->
-        </div>
-        <div class="visual-actions">
-          <button id="add-prop-btn" class="btn-outline">+ Añadir Propiedad</button>
-          <button id="open-sprite-modal-btn" class="btn-outline">🖼️ Vincular Sprite</button>
-        </div>
+      <div id="visual-panel" class="panel">
+        <div id="form-container"></div>
       </div>
-
-      <!-- Panel de Código Crudo (Hjson estricto) -->
-      <div id="code-panel" class="editor-panel hidden">
-        <textarea id="code-editor" spellcheck="false" placeholder="Escribe código Hjson aquí..."></textarea>
+      
+      <div id="code-panel" class="panel hidden">
+        <textarea id="code-editor" spellcheck="false" style="width:100%; height:100%; background:#1e1e24; color:#fff;"></textarea>
       </div>
-
-      <!-- Barra de control inferior -->
-      <div class="workspace-footer">
-        <span id="status-indicator" class="status-text">Guardado</span>
-        <button id="toggle-view-btn" class="btn-primary">👁️ Ver Código</button>
-      </div>
-
     </section>
   </main>
 
-  <!-- Sistema de Modales (Ocultos por defecto) -->
-  <div id="modal-overlay" class="modal-overlay hidden">
-    
-    <!-- Modal para vinculación de Sprites -->
-    <div id="sprite-modal" class="modal-box hidden">
-      <h3>Vincular Sprite a Elemento</h3>
-      <p class="modal-desc">El nombre de la imagen se igualará automáticamente al identificador del bloque/item seleccionado.</p>
-      
-      <div class="modal-field">
-        <label>Seleccionar elemento base:</label>
-        <select id="sprite-target-select" class="input-dark"></select>
-      </div>
-      
-      <div class="modal-field">
-        <label>Archivo PNG (Resolución base x32):</label>
-        <input type="file" id="sprite-upload" accept="image/png" class="input-dark">
-      </div>
-      
-      <div class="modal-actions">
-        <button id="cancel-sprite-btn" class="btn-outline">Cancelar</button>
-        <button id="confirm-sprite-btn" class="btn-primary">Vincular e Importar</button>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Carga de scripts (Orden estricto para dependencias) -->
-  <script src="js/db.js"></script>
+  <!-- Carga de scripts en el orden correcto -->
   <script src="js/hjson-engine.js"></script>
-  <script src="js/ui-controller.js"></script>
-  <script src="js/sprite-engine.js"></script>
-  <script src="js/zip-exporter.js"></script>
-  <script src="js/code-editor.js"></script>
-  <script src="js/mod-manager.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/logger.js"></script>
   <script src="js/item-registry.js"></script>
   <script src="js/block-templates.js"></script>
   <script src="js/bullet-editor.js"></script>
+  <script src="js/mod-manager.js"></script>
   <script src="js/mod-validator.js"></script>
+  <script src="js/code-editor.js"></script>
   <script src="js/sprite-viewer.js"></script>
   <script src="js/project-backup.js"></script>
-  <script src="js/logger.js"></script>
+  <script src="js/ui-controller.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
