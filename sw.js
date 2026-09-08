@@ -1,8 +1,4 @@
-/**
- * Service Worker (sw.js)
- * Enables complete offline capability by caching application shell and dependencies.
- */
-const CACHE_NAME = 'modstudio-v1.0.0';
+const CACHE_NAME = 'mindmod-v3';
 
 const ASSETS_TO_CACHE = [
     './',
