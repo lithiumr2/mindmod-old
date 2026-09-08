@@ -1,0 +1,6 @@
+{
+  "appId": "com.mindmod.ide",
+  "appName": "Mindmod",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
