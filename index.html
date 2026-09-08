@@ -19,11 +19,11 @@
     </div>
   </header>
 
-  <main class="app-layout">
-    <aside class="sidebar">
-      <button id="new-element-btn" class="btn btn-accent">+ New Element</button>
+    <main class="app-layout" style="display: flex; flex-direction: column; gap: 20px; padding: 15px;">
+    <aside class="sidebar" style="background: #1e1e24; padding: 15px; border-radius: 6px;">
+      <button id="new-element-btn" class="btn btn-accent" style="width: 100%; margin-bottom: 15px;">+ New Element</button>
       
-      <div class="tools-menu" style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+      <div class="tools-menu" style="display: flex; flex-direction: column; gap: 8px;">
         <button id="mod-json-btn" class="btn btn-secondary">mod.json</button>
         <button id="audit-mod-btn" class="btn btn-secondary">Audit Mod</button>
         <button id="view-sprites-btn" class="btn btn-secondary">View Textures</button>
@@ -40,10 +40,10 @@
       <ul id="file-list" class="file-list" style="margin-top: 20px;"></ul>
     </aside>
 
-    <section class="editor-area">
-      <div class="editor-toolbar">
+    <section class="editor-area" style="background: #1e1e24; padding: 15px; border-radius: 6px;">
+      <div class="editor-toolbar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a32;">
          <button id="toggle-view-btn" class="btn btn-secondary">View Code</button>
-         <span id="status-indicator" style="margin-left: 15px; color: #a0a0b0; font-size: 12px;">Ready</span>
+         <span id="status-indicator" style="color: #a0a0b0; font-size: 12px;">Ready</span>
       </div>
       
       <div id="visual-panel" class="panel">
@@ -51,10 +51,11 @@
       </div>
       
       <div id="code-panel" class="panel hidden">
-        <textarea id="code-editor" spellcheck="false" style="width:100%; height:100%; background:#1e1e24; color:#fff;"></textarea>
+        <textarea id="code-editor" spellcheck="false" style="width:100%; min-height: 300px; background:#141418; color:#fff; padding: 10px; border: 1px solid #3a3a48; border-radius: 4px;"></textarea>
       </div>
     </section>
   </main>
+
 
   <!-- Carga de scripts en el orden correcto -->
   <script src="js/hjson-engine.js"></script>
